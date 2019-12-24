@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block content %}
+    <article class="content-section">
+      <legend class="border-bottom mb-4">Body Weight Tracker (BWT)</legend>
+      
+      <!--If the user has made posts, this tells them whether they have gained or lost weight.-->
+      {% if posts.total != 0 %}
+        <h5 class="mb-3">Welcome, {{ user.username }}. You have made {{ posts.total }} post(s)!</h5>
+        <h5 class="mb-4">{{weightChange}}</h5>
+      {% else %}
+        <h5 class="mb-4">Welcome, {{ user.username }}. You have made {{ posts.total }} post(s)!</h5>
+      {%endif%}
+
+      <!--This iterates through the user's posts-->
+      {% for post in posts.items %}
+      <article class="media content-section">
+        <div class="media-body">
+          <h3>Post ID #: <a href="{{ url_for('post', post_id=post.id) }}">{{ post.id }}</a></h3>
+          <h5 class="text-muted">{{ post.date_posted.strftime('Post Time: %Y.%m.%d %I:%M %p') }}</h5>
+          <h3>Weight at time of post: {{ post.content }} lb</h3>
+        </div>
+      </article>
+      {% endfor %}
+      <div class="border-top pt-3">
+          <small class="text-muted">
+              Create new post? <a class="ml-2" href="{{ url_for('new_post') }}">New post&nbsp</a>
+              Need some inspriation? <a class="ml-2" href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" target="_blank">Click here</a>
+          </small>
+      </div>
+    </article>
+    
+    <!--Pagination-->
+    {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+      {% if page_num %}
+        {% if posts.page == page_num %}
+          <a class="btn btn-info mb-4" href="{{ url_for('user_posts', username=user.username, page=page_num) }}">{{ page_num }}</a>
+        {% else %}
+          <a class="btn btn-outline-info mb-4" href="{{ url_for('user_posts', username=user.username, page=page_num) }}">{{ page_num }}</a>
+        {% endif %}
+      {% else %}
+        ...
+      {% endif %}
+    {% endfor %}
+{% endblock content %}

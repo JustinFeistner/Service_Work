@@ -1,0 +1,8 @@
+>CD:Pound_Tracker>py run.py
+
+In Browser:
+localhost:5000 (/home,login,about, etc)
+
+Amazon ec2 Link:
+100.26.194.195
+ec2-100-26-194-195.compute-1.amazonaws.com

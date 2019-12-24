@@ -1,0 +1,250 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="keywords" content="Biometrics Calculator, Body weight Tracker"/>
+    <meta type="description" content="This website lets people track their body weight and gives nutritional advise."/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name=”robots” content="index,nofollow">
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main.css') }}">
+
+    <!--JavaScript-->
+    <script type="text/javascript">window.setTimeout("document.getElementById('disappear').style.display='none';", 2000); </script>
+    <script >
+      function getVariables(){
+        // Get all variables from HTML file. 
+        var userName = document.getElementById("userName").value;
+        var userWeightBiometric = document.getElementById("userWeightBiometric").value;
+        var userHeight = document.getElementById("userHeight").value;
+        var userAge = document.getElementById("userAge").value;
+        var genderPick = document.getElementById('genderPick'); // Dropdown Item
+        var genderPick = genderPick.options[genderPick.selectedIndex].text;
+        var goalPick = document.getElementById("goalPick"); // Dropdown Item
+        var goalPick = goalPick.options[goalPick.selectedIndex].text;
+        // Test - Uncomment below to make sure all variables are accounted for. 
+        //window.alert(`You entered stuff! ${userName}, ${userWeightBiometric}, ${userHeight}, ${userAge}, ${genderPick}, ${goalPick}`);
+        
+        // Test to make sure every field has been filled. If not, create alert window. 
+        if(isNaN(userWeightBiometric) || isNaN(userHeight) || isNaN(userAge) || userName == "" || genderPick == "Choose one" || goalPick == "Select a goal"){
+            window.alert("Please doublecheck that all of the fields have been filled in the biometrics table. Then, click 'submit'.")
+            return
+        }
+        // Otherwise, proceed to next function to calculate the amount of calories the user needs per day [Basal Metabiolic Rate (BMR)].
+        calculateBMR(userName, userWeightBiometric, userHeight, userAge, genderPick, goalPick)
+      }
+
+      function calculateBMR(  userName, userWeightBiometric, userHeight, userAge, genderPick, goalPick){
+        // This function establishes a daily calorie expenditure based on user biometrics.
+        // https://www.thecalculatorsite.com/health/bmr-calculator.php
+        if(genderPick=="Male"){
+            // Perform male Mifflin - St Jeor formula for men
+            var userBMR = (4.536 * userWeightBiometric) + (15.88 * userHeight) - (5 * userAge) + 5;
+        }
+        else if(genderPick=="Female"){
+            // Perform female Mifflin - St Jeor formula for women
+            var userBMR = (4.536 * userWeightBiometric) + (15.88 * userHeight) - (5 * userAge) - 161;
+        }
+        // We are defaulting to "sedentary lifestyle" multiplier for simplicity. If people were active, the multiplier would go up and they would burn more calories. 
+        newBMR = Math.ceil(userBMR * 1.2);
+        // Test - Uncomment below to make sure the TDEE variable is working.
+        // window.alert(`Your TDEE has been calculated and is ${newBMR}`)
+        
+        // Proceed to function to create new variables if the user wants to lose, maintain, or gain weight.
+        calculateResults(newBMR, userName, goalPick)
+      }
+
+      function calculateResults(newBMR, userName, goalPick){
+        // This function handles whether the user wants to lose, maintain, or gain weight. It modifies calorie total based on user goal.
+        if(goalPick == "Lose Weight") {
+            var modifiedBMR = (newBMR - (newBMR * 0.15));
+        }
+        else if(goalPick == "Maintain Weight"){
+            var modifiedBMR = (newBMR); 
+        }
+        else if(goalPick == "Gain Weight"){
+            var modifiedBMR = (newBMR + (newBMR * 0.15));
+        }
+        // This calculates actual grams of type of food based on calorie total
+        var dailyProtein = (modifiedBMR * 0.42) / 4;
+        var dailyCarbs = (modifiedBMR * 0.38) / 4;
+        var dailyFat = (modifiedBMR * 0.20) / 9;
+        
+        // Proceed to function that prints the results. 
+        displayResults(goalPick, newBMR, modifiedBMR, dailyProtein, dailyCarbs, dailyFat, userName)
+      }
+
+      function displayResults(goalPick, newBMR, modifiedBMR, dailyProtein, dailyCarbs, dailyFat, userName){
+        // This is the final function called from the above process for the feedback window.
+        var results = document.getElementById("resultsTextArea").value =
+        `${userName}'s results: \n\no TDEE (Total Daily Energy Expenditure): ${newBMR} Calories\no Recommended Daily Calorie Intake: ${modifiedBMR} 
+        \nIn order to ${goalPick}, that's how many calories you need to eat per day.\n\nYour daily recommended Macro-Nutrients are:
+        \no Carbs: ${Math.ceil(dailyCarbs)} grams\no Protein: ${Math.ceil(dailyProtein)} grams\no Fats: ${Math.ceil(dailyFat)} grams
+        \nIf eating 3 equal meals a day, one meal should resemble the following:
+        \no Carbs: ${Math.ceil(dailyCarbs* 0.33)} grams\no Protein: ${Math.ceil(dailyProtein * 0.33)} grams \no Fats: ${Math.ceil(dailyFat * 0.33)} grams`
+      }    
+    </script>
+
+    {% if title %}
+        <title>Pound Tracker - {{ title }}</title>
+    {% else %}
+        <title>Pound Tracker</title>
+    {% endif %}
+</head>
+<body>
+  <!--HEADER/NAV BAR-->
+    <header class="site-header">
+      <nav class="navbar navbar-expand-md navbar-dark fixed-top" style="background-color: #4682b4;">
+        <div class="container">
+          {% if current_user.is_authenticated %}
+            <a class="navbar-brand mr-4" href="{{ url_for('user_posts', username=current_user.username) }}">Pound Tracker</a>
+          {% else %}
+            <a class="navbar-brand mr-4" href="/">Pound Tracker</a>
+          {% endif %} 
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggle" aria-controls="navbarToggle" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarToggle">
+            <div class="navbar-nav mr-auto">
+              {% if current_user.is_authenticated %}
+                <a class="nav-item nav-link" href="{{ url_for('user_posts', username=current_user.username) }}">Home</a>
+              {% else %}
+                <a class="nav-item nav-link" href="{{ url_for('home') }}">Home</a>
+              {% endif %}
+            </div>
+            <!-- Header Navbar Right Side -->
+            <div class="navbar-nav">
+              {% if current_user.is_authenticated %}
+                <a class="nav-item nav-link" href="{{ url_for('new_post') }}">New Post</a>
+                <a class="nav-item nav-link" href="{{ url_for('account') }}">Account</a>
+                <a class="nav-item nav-link" href="{{ url_for('logout') }}">Logout</a>
+              {% else %}
+                <a class="nav-item nav-link" href="{{ url_for('login') }}">Login</a>
+                <a class="nav-item nav-link" href="{{ url_for('register') }}">Register</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+    <main role="main" class="container">
+      <div class="row">
+      <!--Left Sidebar-->
+        <div class="col sticky-top">
+            <div class="content-section">
+              <h4>Advertisment</h4>
+              <p class='text-muted'>Post any advertisement here to make money.
+                <!-- <img src="{{ url_for('static', filename='pictures/AdvertisementLeft.jpg') }}" class="img-fluid" alt="Responsive image"> -->
+                <img src='https://i.postimg.cc/xdSGDVtv/Advertisement-Left.jpg' class="img-fluid" alt='Advertisement-Left'>
+                <ul class="list-group">
+                  <li class="list-group-item list-group-item-light">Weight Loss Now</li>
+                  <li class="list-group-item list-group-item-light">Our Products</li>
+                  <li class="list-group-item list-group-item-light">Exercise</li>
+                  <li class="list-group-item list-group-item-light">etc</li>
+                </ul>
+              </p>
+            </div>
+          </div>
+        <div class="col-7">
+      <!--FLASH MESSAGE SECTION-->
+          {% with messages = get_flashed_messages(with_categories=true) %} <!-- Get FM-->
+            {% if messages %} <!--If there is a FM:-->
+              {% for category, message in messages %} <!-- Loop over Flash Messages-->
+                <div  id="disappear" class="alert alert-{{ category }}"> <!--(Category is "success" parameter of FM-->
+                  {{ message }} <!-- Display Flash Message text-->
+                </div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+      <!--TEMPLATE (BLOCK CONTENT) SECTION-->
+          {% block content %}
+          {% endblock %}
+          <!--BIOMETRICS SECTION-->
+          <article class="media content-section">
+            <fieldset class="form-group">
+              <legend class="border-bottom mb-4">Biometrics Calculator</legend>
+              <div class="form-group">
+                  <form>
+                    <div class="form-row">
+                      <div class="col">
+                        <label for="name">Name</label>
+                        <input type="text" class="form-control" id="userName" placeholder="Name">
+                      </div>
+                      <div class="col">
+                        <label for="gender">Gender</label>
+                        <select id="genderPick" class="form-control">
+                          <option value="0" style="display:none;" selected>Select a gender</option>
+                          <option value="1">Male</option>
+                          <option value="2">Female</option>
+                        </select>
+                      </div>
+                      <div class="col">
+                        <label for="goal">Choose Goal</label>
+                        <select id="goalPick" class="form-control">
+                          <option value="0" style="display:none;" selected>Select a goal</option>
+                          <option value="1">Lose Weight</option>
+                          <option value="2">Maintain Weight</option>
+                          <option value="3">Gain Weight</option>
+                        </select>                         
+                      </div>
+                    </div>
+                    <br>
+                    <div class="form-row">
+                      <div class="col">
+                        <label for="weight">Weight (lbs)</label>
+                        <input type="text" class="form-control" id="userWeightBiometric" placeholder="Weight">
+                      </div>
+                      <div class="col">
+                        <label for="age">Age</label>
+                        <input type="text" class="form-control" id="userAge" placeholder="Age">
+                      </div>
+                      <div class="col">
+                          <label for="height">Height (inches)</label>
+                          <input type="text" class="form-control" id="userHeight" placeholder="Height">
+                        </div>
+                    </div>
+                    <br>
+                    <input class="btn btn-info btn-block " type="button" value="Calculate!" name="submit_btn" onclick="getVariables();">
+                    <br>
+                    <div style="text-align:center">
+                        <textarea class="form-control" placeholder="Biometrics Results..." id="resultsTextArea" style="text-align:left" rows="10" cols="88"></textarea>
+                    </div>
+                  </form>
+                </div>
+            </fieldset>
+          </article>
+        </div>
+      <!--Right Sidebar-->
+        <div class="col">
+          <div class="content-section">
+            <h4>Advertisement</h4>
+            <p class='text-muted'>Post any advertisement here to make money.
+                <!-- <img src="{{ url_for('static', filename='pictures/AdvertisementRight.jpg') }}" class="img-fluid" alt="Responsive image"> -->
+                <img src='https://i.postimg.cc/KYrPmpHd/Advertisement-Right.jpg' class="img-fluid" alt='Advertisement-Right'>
+              <ul class="list-group">
+                <li class="list-group-item list-group-item-light">Weight Loss Now</li>
+                <li class="list-group-item list-group-item-light">Our Products</li>
+                <li class="list-group-item list-group-item-light">Exercise</li>
+                <li class="list-group-item list-group-item-light">etc</li>
+              </ul>
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="fixed-bottom" style="background-color: #4682b4; color: #cbd5db;">
+        <div><small class="d-flex justify-content-center">Justin Feistner - SWDV 691 Capstone</small></div>
+    </footer>
+    <!-- jQuery, Popper.js, Bootstrap JS from Bootsrap -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+  </body>
+
+</html>
